@@ -5,6 +5,7 @@ import torch
 import whisper
 import ffmpeg
 import srt
+import shutil
 import datetime
 import urllib.request
 import tensorflow as tf
@@ -39,6 +40,9 @@ class Transcribe:
             self.data_folder, os.getenv("AUDIO_FOLDER")
         )
         self.output_folder = os.path.join(self.data_folder, os.getenv("OUTPUT_FOLDER"))
+        self.processed_folder = os.path.join(
+            self.data_folder, os.getenv("PROCESSED_FOLDER")
+        )
         self.init_vad_model()
 
         self.model_size = os.getenv("MODEL_SIZE")
@@ -363,6 +367,11 @@ class Transcribe:
             self.source_separate(audio_path)
             self.encode_audio(audio_path)
             self.run_whisper(out_path)
+
+            # Move file to processed
+            shutil.move(
+                audio_path, os.path.join(self.processed_folder, f"{filename}.wav")
+            )
             self.convert_srt_txt(out_path, output_txt_file)
 
 
