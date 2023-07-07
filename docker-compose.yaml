@@ -1,0 +1,21 @@
+version: "3.7"
+
+services:
+  app:
+    image: keelezibel/whisper:1.0.0
+    volumes:
+      - .env:/app/.env
+      - ./models:/models
+      - ./models/spleeter:/app/pretrained_models
+      - ./models/snakers4_silero-vad_master:/root/.cache/torch/hub/snakers4_silero-vad_master
+      - ./data:/app/data
+      - ./src:/app/src
+    tty: true
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [ gpu ]
+    shm_size: '8gb'

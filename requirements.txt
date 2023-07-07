@@ -1,0 +1,9 @@
+srt
+ffmpeg-python
+spleeter
+tqdm
+pandas
+yt-dlp
+pydub
+python-dotenv
+torchaudio
