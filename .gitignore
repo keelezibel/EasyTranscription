@@ -167,6 +167,7 @@ data/*/*
 !data/audio/.keep
 !data/outputs/.keep
 !data/vad_chunks/.keep
+!data/transcripts/.keep
 !data/vtt/.keep
 data/links.txt
 data/input_length

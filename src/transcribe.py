@@ -69,25 +69,43 @@ class Transcribe:
             )
             with open(input_len_path) as f:
                 input_length = int(float(f.read())) + 1
-            os.system(
-                f"spleeter separate -d {input_length} -p spleeter:2stems -o '{self.data_folder}/outputs' '{audio_path}'"
-            )
-            spleeter_dir = os.path.basename(os.path.splitext(audio_path)[0])
-            audio_path = "output/" + spleeter_dir + "/vocals.wav"
+
+            if input_length > float(
+                os.getenv("MAX_AUDIO_LEN_SEPARATION")
+            ):  # Library supports up to 10mins of audio
+                proc_audio_path = audio_path
+            else:
+                os.system(
+                    f"spleeter separate -d {input_length} -p spleeter:2stems -o '{self.data_folder}/outputs' '{audio_path}'"
+                )
+                spleeter_dir = os.path.basename(os.path.splitext(audio_path)[0])
+                proc_audio_path = (
+                    os.path.join(self.output_folder, spleeter_dir)
+                    + os.path.sep
+                    + "vocals.wav"
+                )
+            return proc_audio_path
 
     def encode_audio(self, audio_path):
         print("Encoding audio...")
         vad_chunks_path = f"{self.data_folder}/vad_chunks"
         if not os.path.exists(vad_chunks_path):
             os.mkdir(vad_chunks_path)
-        ffmpeg.input(audio_path).output(
-            f"{vad_chunks_path}/silero_temp.wav",
-            ar="16000",
-            ac="1",
-            acodec="pcm_s16le",
-            map_metadata="-1",
-            fflags="+bitexact",
-        ).overwrite_output().run(quiet=True)
+        try:
+            ffmpeg.input(audio_path).output(
+                f"{vad_chunks_path}/silero_temp.wav",
+                ar="16000",
+                ac="1",
+                acodec="pcm_s16le",
+                map_metadata="-1",
+                fflags="+bitexact",
+            ).overwrite_output().run(
+                quiet=True, capture_stdout=True, capture_stderr=True
+            )
+        except ffmpeg.Error as e:
+            print("stdout:", e.stdout.decode("utf8"))
+            print("stderr:", e.stderr.decode("utf8"))
+            raise e
 
     def run_whisper(self, out_path):
         print("Running VAD...")
@@ -359,13 +377,17 @@ class Transcribe:
 
         for audio_path in tqdm(wav_files):
             filename = os.path.basename(audio_path).split(".")[0]
-            out_path = os.path.join(self.output_folder, f"{filename}/{filename}.srt")
+            out_path_folder = os.path.join(self.output_folder, f"{filename}")
+            out_path = os.path.join(out_path_folder, f"{filename}.srt")
+            # Create Folder if not exist
+            os.makedirs(out_path_folder, exist_ok=True)
+
             output_txt_file = os.path.join(
                 self.output_folder, f"{filename}/{filename}.txt"
             )
 
-            self.source_separate(audio_path)
-            self.encode_audio(audio_path)
+            proc_audio_path = self.source_separate(audio_path)
+            self.encode_audio(proc_audio_path)
             self.run_whisper(out_path)
 
             # Move file to processed
@@ -373,6 +395,12 @@ class Transcribe:
                 audio_path, os.path.join(self.processed_folder, f"{filename}.wav")
             )
             self.convert_srt_txt(out_path, output_txt_file)
+
+            # Clean up vad_chunks folder
+            vad_chunks_dir = os.path.join(self.data_folder, "vad_chunks")
+            for f in os.listdir(vad_chunks_dir):
+                if f != ".keep":
+                    os.remove(os.path.join(vad_chunks_dir, f))
 
 
 if __name__ == "__main__":
