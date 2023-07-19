@@ -378,14 +378,20 @@ class Transcribe:
         for audio_path in tqdm(wav_files):
             filename = os.path.basename(audio_path).split(".")[0]
             out_path_folder = os.path.join(self.output_folder, f"{filename}")
-            out_path = os.path.join(out_path_folder, f"{filename}.srt")
+            
             # Create Folder if not exist
             os.makedirs(out_path_folder, exist_ok=True)
 
-            output_txt_file = os.path.join(
-                self.output_folder, f"{filename}/{filename}.txt"
-            )
-
+            if self.task == "transcribe":
+                out_path = os.path.join(out_path_folder, f"{filename}_orig.srt")
+                output_txt_file = os.path.join(
+                    self.output_folder, f"{filename}/{filename}_orig.txt"
+                )
+            elif self.task == "translate":
+                out_path = os.path.join(out_path_folder, f"{filename}_trans.srt")
+                output_txt_file = os.path.join(
+                    self.output_folder, f"{filename}/{filename}_trans.txt"
+                )
             proc_audio_path = self.source_separate(audio_path)
             self.encode_audio(proc_audio_path)
             self.run_whisper(out_path)
