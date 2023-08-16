@@ -163,6 +163,7 @@ models/*
 !models/.keep
 outputs/*
 !outputs/.keep
+data/*
 data/*/*
 !data/audio/.keep
 !data/outputs/.keep
@@ -170,3 +171,4 @@ data/*/*
 !data/transcripts/.keep
 !data/vtt/.keep
 data/input_length
+data/links.txt
