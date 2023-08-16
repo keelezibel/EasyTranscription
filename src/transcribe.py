@@ -28,6 +28,7 @@ class Transcribe:
         self.chunk_threshold = float(os.getenv("CHUNK_THRESHOLD"))
 
         self.use_gpu = use_gpu
+        self.language = str(os.getenv("LANGUAGE"))
 
         if os.getenv("TRANSLATION_MODE") == "Transcribe & Translate":
             self.task = "translate"
@@ -449,6 +450,7 @@ class Transcribe:
                 result = self.whisper_model.transcribe(
                     f"{vad_chunks_path}/" + str(i) + ".wav",
                     task=self.task,
+                    language=self.language
                 )
                 # Break if result doesn't end with severe hallucinations
                 if len(result["segments"]) == 0:
@@ -635,8 +637,8 @@ class Transcribe:
                 output_txt_file = os.path.join(
                     self.output_folder, f"{filename}/{filename}_trans.txt"
                 )
-            proc_audio_path = self.source_separate(audio_path)
-            self.encode_audio(proc_audio_path)
+            # proc_audio_path = self.source_separate(audio_path)
+            self.encode_audio(audio_path)
             if self.use_gpu:
                 out_path = os.path.join(out_path_folder, f"{filename}.srt")
                 self.run_whisper(out_path)
